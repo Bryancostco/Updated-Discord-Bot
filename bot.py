@@ -113,7 +113,7 @@ async def leave(ctx):
         await  ctx.voice_client.disconnect()
         await ctx.send("SEE YA LATER STINKY")
     else:
-        await ctx.send("Im already gone yung blud")
+        await ctx.send("Im already gone youngin")
 
 
 
@@ -148,7 +148,7 @@ async def play(ctx, *, query: str):
 async def skip(ctx):
     if ctx.voice_client and ctx.voice_client.is_playing():
         ctx.voice_client.stop()
-        await ctx.send("skipped, fuck you")
+        await ctx.send("skipped, curse you")
     else:
         await ctx.send("nothing is playin cornball")
 
