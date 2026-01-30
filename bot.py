@@ -24,6 +24,8 @@ ytdl = yt_dlp.YoutubeDL(ytdl_opts)
 
 intents = discord.Intents.default()        #tell Discord what “event categories” your bot wants to receive (messages, reactions, guild events, etc.). You pass intents into Client/Bot constructors.
 intents.message_content = True             #allows message reads
+intents.voice_states = True
+intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents = intents)  # ! is used for commands , and message intents are default
 queues = {}
@@ -73,8 +75,21 @@ async def on_ready():
     print(f"logged in as {bot.user} (id={bot.user.id})")
     
 
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if member.bot:
+        return
+    if after.channel is None:
+        return
 
-
+    # check if deafened
+    if (before.self_deaf is False) and (after.self_deaf is True):
+        try:
+            await member.move_to(None, reason="dont click that button in here bozo")
+        except discord.Forbidden:
+            print("Need Move Members permission / role hierarchy.")
+        except Exception as e:
+            print(f" server sided error: {e}")
 
 
 @bot.command()                        # Turns a normal async function into a Discord command
@@ -99,8 +114,6 @@ async def join(ctx):
     channel = ctx.author.voice.channel
     await channel.connect()
     await ctx.send(f"yo whats good {channel.name}")
-
-
 
 
 
