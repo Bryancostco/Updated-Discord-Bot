@@ -13,9 +13,14 @@ TOKEN =os.getenv("DISCORD_TOKEN")
 FFMPEG_BEFORE = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
 FFMPEG_OPTIONS = "-vn"
 ytdl_opts = {
-    "format": "bestaudio/best",
+    "format": "bestaudio[ext=m4a]/bestaudio/best",
     "quiet": True,
-    "noplaylist": True
+    "noplaylist": True,
+    "extractor_args": {
+        "youtube": {
+            "player_client": ["android", "web"]
+        }
+    },
 }
 
 ytdl = yt_dlp.YoutubeDL(ytdl_opts)
@@ -25,7 +30,6 @@ ytdl = yt_dlp.YoutubeDL(ytdl_opts)
 intents = discord.Intents.default()        #tell Discord what “event categories” your bot wants to receive (messages, reactions, guild events, etc.). You pass intents into Client/Bot constructors.
 intents.message_content = True             #allows message reads
 intents.voice_states = True
-intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents = intents)  # ! is used for commands , and message intents are default
 queues = {}
