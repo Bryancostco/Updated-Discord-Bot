@@ -83,17 +83,26 @@ async def on_ready():
 async def on_voice_state_update(member, before, after):
     if member.bot:
         return
+
+    # Not in a VC
     if after.channel is None:
         return
 
-    # check if deafened
-    if (before.self_deaf is False) and (after.self_deaf is True):
-        try:
-            await member.move_to(None, reason="dont click that button in here bozo")
-        except discord.Forbidden:
-            print("Need Move Members permission / role hierarchy.")
-        except Exception as e:
-            print(f" server sided error: {e}")
+    try:
+        # Case 1: joined while already deafened
+        if (before.channel is None) and after.self_deaf:
+            await member.move_to(None, reason="tried to cheat the system")
+            return
+
+        # Case 2: toggled deafen on while in VC
+        if (before.self_deaf is False) and (after.self_deaf is True):
+            await member.move_to(None, reason="deafned while in call")
+            return
+
+    except discord.Forbidden:
+        print("Need Move Members permission / role hierarchy.")
+    except Exception as e:
+        print(f"Server sided error tell bryan: {e}")
 
 
 @bot.command()                        # Turns a normal async function into a Discord command
