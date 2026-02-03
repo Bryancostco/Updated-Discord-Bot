@@ -4,6 +4,7 @@ import discord                             #imports discord
 from discord.ext import commands           #imports commands from extensions
 from dotenv import load_dotenv             #imports .env
 from collections import deque              #imports queues for queue list 
+from discord.errors import ClientException
 import asyncio
 import yt_dlp                              #used to extract url for songs
 
@@ -122,23 +123,24 @@ async def leave(ctx):
 
 @bot.command()
 async def play(ctx, *, query: str):
-    # Make sure the user is in voice
-    if ctx.author.voice is None or ctx.author.voice.channel is None:
-        await ctx.send("Join a voice channel first buddy.")
-        return
+    if not ctx.author.voice or not ctx.author.voice.channel:
+        return await ctx.send("Join a voie channel first cornball.")
 
-    # Make sure the bot is connected
-    if ctx.voice_client is None or not ctx.voice_client.is_connected():
-        await ctx.author.voice.channel.connect()
+    voice_channel = ctx.author.voice.channel
 
-    vc = ctx.voice_client
+    vc = ctx.voice_client  # this is the bot's current voice connection 
 
-    q = get_queue(ctx.guild.id)                                               # Add URL to queue
-    q.append(query)
-    await ctx.send(f"Queue ({len(q)}): {query}")
+    
+    if vc is None:
+        vc = await voice_channel.connect()
 
-    if not vc.is_playing() and not vc.is_paused():                             # Start playback ONLY if nothing is playing AND nothing is paused
-        await play_next(ctx)
+    
+    elif vc.channel != voice_channel:
+        await vc.move_to(voice_channel)
+
+   
+    
+    await ctx.send(f" meow meow playing : {query}")
 
 
 
