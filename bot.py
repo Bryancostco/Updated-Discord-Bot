@@ -14,9 +14,14 @@ TOKEN =os.getenv("DISCORD_TOKEN")
 FFMPEG_BEFORE = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
 FFMPEG_OPTIONS = "-vn"
 ytdl_opts = {
-    "format": "bestaudio/best",
+    "format": "bestaudio[ext=m4a]/bestaudio/best",
     "quiet": True,
-    "noplaylist": True
+    "noplaylist": True,
+    "extractor_args": {
+        "youtube": {
+            "player_client": ["android", "web"]
+        }
+    },
 }
 
 ytdl = yt_dlp.YoutubeDL(ytdl_opts)
@@ -25,6 +30,7 @@ ytdl = yt_dlp.YoutubeDL(ytdl_opts)
 
 intents = discord.Intents.default()        #tell Discord what “event categories” your bot wants to receive (messages, reactions, guild events, etc.). You pass intents into Client/Bot constructors.
 intents.message_content = True             #allows message reads
+intents.voice_states = True
 
 bot = commands.Bot(command_prefix="!", intents = intents)  # ! is used for commands , and message intents are default
 queues = {}
@@ -74,8 +80,30 @@ async def on_ready():
     print(f"logged in as {bot.user} (id={bot.user.id})")
     
 
+@bot.event
+async def on_voice_state_update(member, before, after):
+    if member.bot:
+        return
 
+    # Not in a VC
+    if after.channel is None:
+        return
 
+    try:
+        # Case 1: joined while already deafened
+        if (before.channel is None) and after.self_deaf:
+            await member.move_to(None, reason="tried to cheat the system")
+            return
+
+        # Case 2: toggled deafen on while in VC
+        if (before.self_deaf is False) and (after.self_deaf is True):
+            await member.move_to(None, reason="deafned while in call")
+            return
+
+    except discord.Forbidden:
+        print("Need Move Members permission / role hierarchy.")
+    except Exception as e:
+        print(f"Server sided error tell bryan: {e}")
 
 
 @bot.command()                        # Turns a normal async function into a Discord command
@@ -100,8 +128,6 @@ async def join(ctx):
     channel = ctx.author.voice.channel
     await channel.connect()
     await ctx.send(f"yo whats good {channel.name}")
-
-
 
 
 
