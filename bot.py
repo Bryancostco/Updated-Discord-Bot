@@ -146,27 +146,31 @@ async def leave(ctx):
 
 
 
-
+# 2/4 updated play to fix issues with playuback
 @bot.command()
 async def play(ctx, *, query: str):
     if not ctx.author.voice or not ctx.author.voice.channel:
-        return await ctx.send("Join a voie channel first cornball.")
+        return await ctx.send("Join a voice channel first cornball.")
 
     voice_channel = ctx.author.voice.channel
+    vc = ctx.voice_client
 
-    vc = ctx.voice_client  # this is the bot's current voice connection 
-
-    
+    # Connect / move bot to the right VC
     if vc is None:
         vc = await voice_channel.connect()
-
-    
     elif vc.channel != voice_channel:
         await vc.move_to(voice_channel)
 
-   
-    
-    await ctx.send(f" meow meow playing : {query}")
+    # Add song to queue
+    q = get_queue(ctx.guild.id)
+    q.append(query)
+
+    # If nothing is currently playing, start the player loop
+    if not vc.is_playing() and not vc.is_paused():
+        await ctx.send(f"added to queue: {query}")
+        await play_next(ctx)
+    else:
+        await ctx.send(f"added to queue: {query}")
 
 
 
@@ -201,7 +205,6 @@ async def play_next(ctx):
     q = get_queue(ctx.guild.id)
 
     if not q:
-        await ctx.send("nothing in queue bozo")
         return
 
     vc = ctx.voice_client
