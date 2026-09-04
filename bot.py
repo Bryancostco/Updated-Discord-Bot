@@ -90,16 +90,22 @@ async def on_voice_state_update(member, before, after):
     # Not in a VC
     if after.channel is None:
         return
- 
+    
+    target_channel = after.channel
+    
     try:
         # Case 1: joined while already deafened
+        #9/3/26 updated to add message sent to server for reason they were moved / kicked 
         if (before.channel is None) and after.self_deaf:
             await member.move_to(None, reason="tried to cheat the system")
+            await target_channel.send("this guy tried joining while deafened IM DEAD")
             return
  
         # Case 2: toggled deafen on while in VC
+        #9/3/26 updated to add message sent to server for reason they were moved / kicked 
         if (before.self_deaf is False) and (after.self_deaf is True):
             await member.move_to(None, reason="deafned while in call")
+            await target_channel.send("This guy tried deafening while in call LOL")
             return
  
     except discord.Forbidden:
@@ -111,8 +117,14 @@ async def on_voice_state_update(member, before, after):
 @bot.command()                        # Turns a normal async function into a Discord command
 async def ping(ctx: commands.Context):
     await ctx.send("pong")
+
+@bot.command()
+async def dababy(ctx:commands.Context):
+    await ctx.send("LETS GOO")
  
- 
+@bot.command()
+async def Ari(ctx: commands.Context):
+    await ctx.send("this bot was promised to me 3000 years ago ")
  
  
  
@@ -186,13 +198,7 @@ async def skip(ctx):
         ctx.voice_client.stop()
         await ctx.send("skipped, curse you")
     else:
-        await ctx.send("nothing is playin cornball")
- 
- 
- 
- 
- 
- 
+        await ctx.send("nothing is playin cornball") 
  
  
 def get_queue(guild_id: int) ->deque: 
