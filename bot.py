@@ -34,6 +34,8 @@ intents.voice_states = True
  
 bot = commands.Bot(command_prefix="!", intents = intents)  # ! is used for commands , and message intents are default
 queues = {}
+now_playing = {}                           # guild_id -> the song currently playing (used for looping)
+loop_flags = {}                             # guild_id -> True/False, is current song on repeat
 inactivity_timers = {}                     # guild_id -> asyncio task that auto disconnects an idle bot
 INACTIVITY_TIMEOUT =  15 * 60               # seconds of silence before the bot leaves on its own (15 min)
  
@@ -153,6 +155,8 @@ async def join(ctx):
 async def leave(ctx):
     if ctx.voice_client is not None:
         cancel_inactivity_timer(ctx.guild.id)          # clear the idle timer, were leaving on purpose
+        loop_flags.pop(ctx.guild.id, None)             # dont carry loop state into the next session
+        now_playing.pop(ctx.guild.id, None)
         await  ctx.voice_client.disconnect()
         await ctx.send("SEE YA LATER STINKY")
     else:
@@ -192,16 +196,35 @@ async def play(ctx, *, query: str):
  
  
  
-@bot.command() 
+@bot.command()
 async def skip(ctx):
     if ctx.voice_client and ctx.voice_client.is_playing():
+        loop_flags[ctx.guild.id] = False       # skipping should actually skip, not replay the loop
         ctx.voice_client.stop()
         await ctx.send("skipped, curse you")
     else:
-        await ctx.send("nothing is playin cornball") 
- 
- 
-def get_queue(guild_id: int) ->deque: 
+        await ctx.send("nothing is playin cornball")
+
+
+# 9/4/26 added loop command, send it again to turn it back off
+@bot.command()
+async def loop(ctx):
+    guild_id = ctx.guild.id
+    vc = ctx.voice_client
+
+    if vc is None or not (vc.is_playing() or vc.is_paused()):    # nothing playin, nothing to loop
+        await ctx.send("nothing is playin cornball")
+        return
+
+    if loop_flags.get(guild_id):               # already looping, turn it off
+        loop_flags[guild_id] = False
+        await ctx.send("loop off, movin on with life")
+    else:                                       # not looping yet, turn it on
+        loop_flags[guild_id] = True
+        await ctx.send("loopin this one forever, hope u like it")
+
+
+def get_queue(guild_id: int) ->deque:
     if guild_id not in queues:
         queues[guild_id] = deque()
     return queues[guild_id]
@@ -240,18 +263,24 @@ def start_inactivity_timer(ctx):                            # starts a fresh 15 
  
  
 async def play_next(ctx):
-    q = get_queue(ctx.guild.id)
- 
-    if not q:
+    guild_id = ctx.guild.id
+    q = get_queue(guild_id)
+
+    # 9/4/26 added loop check, if looping just replay whats already playing instead of grabbing next
+    if loop_flags.get(guild_id) and now_playing.get(guild_id):
+        query = now_playing[guild_id]
+    elif q:
+        query = q.popleft()
+        now_playing[guild_id] = query          # remember it in case they wanna loop it
+    else:
+        now_playing.pop(guild_id, None)
         start_inactivity_timer(ctx)            # queue is empty, start the 15 min auto leave countdown
         return
- 
+
     vc = ctx.voice_client
     if vc is None or not vc.is_connected():
         return
- 
-    query = q.popleft()
- 
+
     try:
         info = await extract_audio_info_async(query)
         stream_url = info["url"]
@@ -275,7 +304,7 @@ async def play_next(ctx):
     )
  
     vc.play(source, after=after_playing)
-    cancel_inactivity_timer(ctx.guild.id)      # a song is playing now, kill any pending auto leave timer
+    cancel_inactivity_timer(guild_id)      # a song is playing now, kill any pending auto leave timer
     await ctx.send(f"listening now to : {title}")
  
  
