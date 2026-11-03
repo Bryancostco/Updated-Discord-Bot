@@ -32,7 +32,7 @@ intents = discord.Intents.default()        #tell Discord what “event categorie
 intents.message_content = True             #allows message reads
 intents.voice_states = True
  
-bot = commands.Bot(command_prefix="!", intents = intents)  # ! is used for commands , and message intents are default
+bot = commands.Bot(command_prefix="!", intents = intents, case_insensitive=True)  # ! is used for commands , and message intents are default
 queues = {}
 now_playing = {}                           # guild_id -> the song currently playing (used for looping)
 loop_flags = {}                             # guild_id -> True/False, is current song on repeat
@@ -125,7 +125,7 @@ async def dababy(ctx:commands.Context):
     await ctx.send("LETS GOO")
  
 @bot.command()
-async def Ari(ctx: commands.Context):
+async def ari(ctx: commands.Context):
     await ctx.send("this bot was promised to me 3000 years ago ")
  
  
